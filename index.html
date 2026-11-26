@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14121c">
+<title>Modcord</title>
+<style>
+:root{--bg:#14121c;--pn:#1c1928;--ln:#2b2640;--tx:#ece9f6;--mu:#8f89a8;--ac:#7c8cff;--hi:#ffb86b;color-scheme:dark}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--tx);font:15px/1.45 "Avenir Next","Segoe UI",system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+button,textarea,input{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+[hidden]{display:none!important}
+#login{min-height:100dvh;display:grid;align-content:center;gap:14px;padding:24px;max-width:420px;margin:auto}
+#login h1{font-size:32px;letter-spacing:-.03em}
+#login p,.note{color:var(--mu)}
+#tok{background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:12px;width:100%}
+#go{background:var(--ac);color:#0f1030;font-weight:700;border-radius:10px;padding:12px}
+#err{color:var(--hi);min-height:1.4em}
+#app{display:flex;height:100dvh}
+#drawer{display:flex;position:fixed;inset:0 auto 0 0;width:min(340px,88vw);transform:translateX(-100%);transition:transform .2s;background:var(--pn);z-index:5;padding-top:env(safe-area-inset-top)}
+#drawer.open{transform:none}
+#scrim{position:fixed;inset:0;background:#0009;z-index:4;display:none}
+#drawer.open+#scrim{display:block}
+#guilds{width:64px;padding:10px 0;display:flex;flex-direction:column;align-items:center;gap:8px;overflow-y:auto;background:#110f18}
+.g{width:44px;height:44px;border-radius:50%;background:var(--ln);overflow:hidden;font-weight:700;flex:none}
+.g img{width:100%;height:100%;display:block}
+.g.on{border-radius:14px;box-shadow:0 0 0 2px var(--ac)}
+#chans{flex:1;overflow-y:auto;padding:12px 8px}
+#chans h2{font-size:17px;padding:4px 8px 10px}
+#chans h3{font-size:12px;color:var(--mu);padding:14px 8px 4px}
+.c{display:block;width:100%;text-align:left;padding:8px;border-radius:8px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c.on{background:var(--ln);color:var(--tx)}
+.out{margin-top:24px;color:var(--hi);padding:8px}
+main{flex:1;display:flex;flex-direction:column;min-width:0;height:100dvh}
+header{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--ln)}
+#menu{font-size:20px;padding:4px 10px}
+#title{font-size:16px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#st{font-size:12px;color:var(--mu)}
+#msgs{flex:1;overflow-y:auto;padding:12px 0}
+.note{padding:24px;text-align:center}
+.m{display:grid;grid-template-columns:40px 1fr;gap:12px;padding:6px 14px;overflow-wrap:anywhere}
+.m.hit{background:#ffb86b14;box-shadow:inset 3px 0 var(--hi)}
+.av{width:40px;height:40px;border-radius:50%;margin-top:2px}
+.h{display:flex;align-items:baseline;gap:8px}
+.h time{font-size:11px;color:var(--mu)}
+.bot{font-size:10px;font-style:normal;background:var(--ac);color:#0f1030;border-radius:4px;padding:0 4px}
+.rep,small{color:var(--mu);font-size:12px}
+.t a{color:var(--ac)}
+.t pre{background:#0e0c14;border:1px solid var(--ln);border-radius:8px;padding:8px;overflow-x:auto;margin:4px 0;white-space:pre-wrap}
+.t code{background:#0e0c14;border-radius:4px;padding:1px 4px}
+.men{background:#7c8cff2e;color:var(--ac);border-radius:4px;padding:0 3px}
+.emo{height:1.3em;vertical-align:middle}
+.spoil{background:#000;color:#000;border-radius:3px;cursor:pointer}.spoil.on{color:inherit;background:var(--ln)}
+.att{display:block;max-width:min(100%,380px);max-height:320px;border-radius:8px;margin-top:6px}
+.file{display:inline-block;margin-top:6px;color:var(--ac)}
+.emb{border-left:4px solid;background:var(--pn);border-radius:6px;padding:8px 10px;margin-top:6px;max-width:420px}
+footer{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--ln);align-items:flex-end}
+#input{flex:1;resize:none;background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:10px 12px;max-height:140px}
+#send{background:var(--ac);color:#0f1030;font-weight:700;border-radius:12px;padding:10px 16px}
+@media(min-width:800px){#drawer{position:static;transform:none;width:320px;flex:none}#menu{display:none}#scrim{display:none!important}}
+</style></head>
+<body>
+<div id="login">
+  <h1>Modcord</h1>
+  <p>Paste your bot token to connect. It stays on this device and is only sent to Discord.</p>
+  <input id="tok" type="password" placeholder="Bot token" autocomplete="off" autocapitalize="off" spellcheck="false">
+  <button id="go">Connect</button>
+  <div id="err"></div>
+</div>
+<div id="app" hidden>
+  <aside id="drawer"><nav id="guilds"></nav><section id="chans"></section></aside>
+  <div id="scrim"></div>
+  <main>
+    <header><button id="menu" aria-label="Open servers and channels">&#9776;</button><h1 id="title">Modcord</h1><span id="st"></span></header>
+    <div id="msgs"><p class="note">Open the menu and choose a channel.</p></div>
+    <footer><textarea id="input" rows="1" placeholder="Pick a channel first"></textarea><button id="send">Send</button></footer>
+  </main>
+</div>
+<script>
+const API='https://discord.com/api/v10',CDN='https://cdn.discordapp.com',$=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const S={guilds:new Map(),chans:new Map(),msgs:new Map(),guild:null,chan:null,me:null,seq:null,sid:null,resume:null,ws:null,hb:0,acked:true};
+let token=localStorage.getItem('mc_token')||'';
+const status=t=>{$('#st').textContent=t;if(!$('#login').hidden)$('#err').textContent=t};
+const show=w=>{$('#login').hidden=w!=='login';$('#app').hidden=w!=='app'};
+
+/* ---------- REST (with 429 retry) ---------- */
+async function api(path,opt={}){
+  for(let i=0;i<3;i++){
+    const r=await fetch(API+path,{...opt,headers:{Authorization:'Bot '+token,'Content-Type':'application/json'}});
+    if(r.status===429){const j=await r.json().catch(()=>({}));await new Promise(z=>setTimeout(z,(j.retry_after||1)*1000));continue}
+    if(!r.ok)throw new Error((await r.json().catch(()=>({}))).message||'HTTP '+r.status);
+    return r.status===204?null:r.json();
+  }
+  throw new Error('Rate limited, try again in a moment');
+}
+
+/* ---------- Gateway: hello, identify, heartbeat, resume ---------- */
+const send=(ws,o)=>ws.readyState===1&&ws.send(JSON.stringify(o));
+function connect(){
+  const ws=S.ws=new WebSocket((S.sid&&S.resume||'wss://gateway.discord.gg')+'/?v=10&encoding=json');
+  ws.onmessage=e=>{const p=JSON.parse(e.data);if(p.s!=null)S.seq=p.s;op(ws,p)};
+  ws.onclose=e=>{
+    clearInterval(S.hb);if(ws!==S.ws)return;
+    const fatal={4004:'Discord rejected this token.',4013:'Invalid intents.',4014:'Turn on Message Content Intent for your bot in the Developer Portal, then connect again.'}[e.code];
+    if(fatal)return logout(fatal);
+    status('Reconnecting...');setTimeout(connect,2000);
+  };
+}
+function op(ws,p){
+  if(p.op===10){
+    const iv=p.d.heartbeat_interval;S.acked=true;
+    const beat=()=>{if(ws!==S.ws)return clearInterval(S.hb);if(!S.acked)return ws.close(4000);S.acked=false;send(ws,{op:1,d:S.seq})};
+    setTimeout(()=>{if(ws!==S.ws)return;beat();S.hb=setInterval(beat,iv)},iv*Math.random());
+    send(ws,S.sid?{op:6,d:{token,session_id:S.sid,seq:S.seq}}
+      :{op:2,d:{token,intents:33281,properties:{os:'android',browser:'modcord',device:'modcord'}}}); // guilds + guild messages + message content
+  }
+  else if(p.op===11)S.acked=true;
+  else if(p.op===1)send(ws,{op:1,d:S.seq});
+  else if(p.op===7)ws.close(4000);
+  else if(p.op===9){if(!p.d){S.sid=null;S.seq=null}ws.close(4000)}
+  else if(p.op===0)dispatch(p.t,p.d);
+}
+
+/* ---------- State cache ---------- */
+function dispatch(t,d){
+  if(t==='READY'){S.me=d.user;S.sid=d.session_id;S.resume=d.resume_gateway_url;status(d.user.username);show('app')}
+  else if(t==='GUILD_CREATE'){
+    S.guilds.set(d.id,{id:d.id,name:d.name,icon:d.icon});
+    (d.channels||[]).forEach(c=>S.chans.set(c.id,{...c,guild_id:d.id}));
+    if(!S.guild)S.guild=d.id;
+    drawGuilds();drawChans();
+  }
+  else if(t==='GUILD_DELETE'){
+    S.guilds.delete(d.id);for(const[k,c]of S.chans)if(c.guild_id===d.id)S.chans.delete(k);
+    if(S.guild===d.id)S.guild=[...S.guilds.keys()][0]||null;
+    drawGuilds();drawChans();
+  }
+  else if(t==='CHANNEL_CREATE'||t==='CHANNEL_UPDATE'){if(d.guild_id){S.chans.set(d.id,d);if(d.guild_id===S.guild)drawChans()}}
+  else if(t==='CHANNEL_DELETE'){S.chans.delete(d.id);if(d.guild_id===S.guild)drawChans()}
+  else if(t==='MESSAGE_CREATE'){
+    const l=S.msgs.get(d.channel_id);
+    if(l&&!l.some(m=>m.id===d.id)){l.push(d);if(l.length>200)l.shift();if(d.channel_id===S.chan)drawMsgs()}
+  }
+  else if(t==='MESSAGE_UPDATE'){
+    const l=S.msgs.get(d.channel_id),i=l?l.findIndex(m=>m.id===d.id):-1;
+    if(i>=0){l[i]={...l[i],...d};if(d.channel_id===S.chan)drawMsgs()}
+  }
+  else if(t==='MESSAGE_DELETE'){
+    const l=S.msgs.get(d.channel_id);
+    if(l){S.msgs.set(d.channel_id,l.filter(m=>m.id!==d.id));if(d.channel_id===S.chan)drawMsgs()}
+  }
+}
+
+/* ---------- Rendering ---------- */
+function md(t,men){
+  const keep=[],stash=h=>'\0'+(keep.push(h)-1)+'\0';
+  t=t.replace(/```(?:\w+\n)?([\s\S]*?)```/g,(_,c)=>stash('<pre>'+esc(c)+'</pre>'))
+     .replace(/`([^`\n]+)`/g,(_,c)=>stash('<code>'+esc(c)+'</code>'))
+     .replace(/<?(https?:\/\/[^\s<>]+)>?/g,(_,u)=>stash(`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`));
+  const who=i=>{const u=(men||[]).find(x=>x.id===i);return u?(u.global_name||u.username):'user'};
+  return esc(t)
+    .replace(/&lt;a?:(\w+):(\d+)&gt;/g,(_,n,i)=>`<img class="emo" src="${CDN}/emojis/${i}.png?size=48" alt=":${n}:">`)
+    .replace(/&lt;@!?(\d+)&gt;/g,(_,i)=>`<span class="men">@${esc(who(i))}</span>`)
+    .replace(/&lt;#(\d+)&gt;/g,(_,i)=>`<span class="men">#${esc(S.chans.get(i)?.name||'channel')}</span>`)
+    .replace(/&lt;@&amp;\d+&gt;/g,'<span class="men">@role</span>')
+    .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/__(.+?)__/g,'<u>$1</u>')
+    .replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/~~(.+?)~~/g,'<s>$1</s>')
+    .replace(/\|\|(.+?)\|\|/g,'<span class="spoil" onclick="this.classList.toggle(\'on\')">$1</span>')
+    .replace(/\0(\d+)\0/g,(_,i)=>keep[i]);
+}
+const av=u=>u.avatar?`${CDN}/avatars/${u.id}/${u.avatar}.png?size=64`:`${CDN}/embed/avatars/${Number((BigInt(u.id)>>22n)%6n)}.png`;
+const emb=e=>`<div class="emb" style="border-color:${e.color?'#'+e.color.toString(16).padStart(6,'0'):'var(--ln)'}">${e.title?`<b>${esc(e.title)}</b>`:''}${e.description?`<div>${md(e.description)}</div>`:''}${(e.image||e.thumbnail)?`<img class="att" src="${esc((e.image||e.thumbnail).url)}" alt="">`:''}</div>`;
+function msgHTML(m,p){
+  const a=m.author,nm=m.member?.nick||a.global_name||a.username;
+  const same=p&&p.author.id===a.id&&!m.referenced_message&&new Date(m.timestamp)-new Date(p.timestamp)<3e5;
+  const hit=m.mentions?.some(u=>u.id===S.me?.id)?' hit':'';
+  const body=(m.content?`<div class="t">${md(m.content,m.mentions)}${m.edited_timestamp?' <small>(edited)</small>':''}</div>`:'')
+    +(m.attachments||[]).map(f=>/^image\//.test(f.content_type||'')?`<img class="att" src="${esc(f.url)}" alt="">`:`<a class="file" href="${esc(f.url)}" target="_blank">Attachment: ${esc(f.filename)}</a>`).join('')
+    +(m.embeds||[]).map(emb).join('');
+  if(same)return `<div class="m${hit}"><span></span><div>${body}</div></div>`;
+  const r=m.referenced_message,rep=r?`<div class="rep">Replying to ${esc(r.author.username)}: ${esc((r.content||'attachment').slice(0,80))}</div>`:'';
+  const time=new Date(m.timestamp).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  return `<div class="m${hit}"><img class="av" src="${av(a)}" alt=""><div>${rep}<div class="h"><b>${esc(nm)}</b>${a.bot?'<i class="bot">bot</i>':''}<time>${time}</time></div>${body}</div></div>`;
+}
+function drawGuilds(){
+  $('#guilds').innerHTML=[...S.guilds.values()].map(g=>`<button class="g${g.id===S.guild?' on':''}" data-g="${g.id}" title="${esc(g.name)}">${g.icon?`<img src="${CDN}/icons/${g.id}/${g.icon}.png?size=64" alt="">`:esc([...g.name].slice(0,2).join(''))}</button>`).join('');
+}
+function drawChans(){
+  const g=S.guilds.get(S.guild);if(!g){$('#chans').innerHTML='<p class="note">No servers yet. Invite your bot to one.</p>';return}
+  const all=[...S.chans.values()].filter(c=>c.guild_id===S.guild).sort((a,b)=>a.position-b.position);
+  const txt=all.filter(c=>c.type===0||c.type===5),row=c=>`<button class="c${c.id===S.chan?' on':''}" data-c="${c.id}"># ${esc(c.name)}</button>`;
+  let h=`<h2>${esc(g.name)}</h2>`+txt.filter(c=>!c.parent_id).map(row).join('');
+  all.filter(c=>c.type===4).forEach(k=>{const kids=txt.filter(c=>c.parent_id===k.id);if(kids.length)h+=`<h3>${esc(k.name)}</h3>`+kids.map(row).join('')});
+  $('#chans').innerHTML=h+'<button class="out" id="out">Disconnect</button>';
+}
+function drawMsgs(stick){
+  const el=$('#msgs'),l=S.msgs.get(S.chan)||[],near=el.scrollHeight-el.scrollTop-el.clientHeight<120;
+  el.innerHTML=l.length?l.map((m,i)=>msgHTML(m,l[i-1])).join(''):'<p class="note">No messages yet.</p>';
+  if(stick||near)el.scrollTop=el.scrollHeight;
+}
+async function openChan(id){
+  S.chan=id;drawChans();closeDrawer();
+  const c=S.chans.get(id);$('#title').textContent='# '+c.name;$('#input').placeholder='Message #'+c.name;
+  if(!S.msgs.has(id)){
+    $('#msgs').innerHTML='<p class="note">Loading...</p>';
+    try{S.msgs.set(id,(await api(`/channels/${id}/messages?limit=50`)).reverse())}
+    catch(e){if(S.chan===id)$('#msgs').innerHTML=`<p class="note">Can't read this channel: ${esc(e.message)}<br>The bot needs View Channel and Read Message History here.</p>`;return}
+  }
+  if(S.chan===id)drawMsgs(true);
+}
+async function sendMsg(){
+  const i=$('#input'),v=i.value.trim();if(!v||!S.chan)return;
+  i.value='';i.style.height='';
+  try{await api(`/channels/${S.chan}/messages`,{method:'POST',body:JSON.stringify({content:v})})}
+  catch(e){i.value=v;status("Couldn't send: "+e.message)}
+}
+
+/* ---------- Wiring ---------- */
+const closeDrawer=()=>$('#drawer').classList.remove('open');
+$('#menu').onclick=()=>$('#drawer').classList.add('open');
+$('#scrim').onclick=closeDrawer;
+$('#guilds').onclick=e=>{const b=e.target.closest('[data-g]');if(b){S.guild=b.dataset.g;drawGuilds();drawChans()}};
+$('#chans').onclick=e=>{const b=e.target.closest('[data-c]');if(b)openChan(b.dataset.c);if(e.target.id==='out')logout()};
+$('#send').onclick=sendMsg;
+$('#input').oninput=e=>{const i=e.target;i.style.height='auto';i.style.height=Math.min(i.scrollHeight,140)+'px'};
+$('#input').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!matchMedia('(pointer:coarse)').matches){e.preventDefault();sendMsg()}};
+function logout(msg){
+  if(S.ws){S.ws.onclose=null;S.ws.close()}clearInterval(S.hb);
+  localStorage.removeItem('mc_token');token='';
+  Object.assign(S,{sid:null,seq:null,chan:null,guild:null,ws:null});S.guilds.clear();S.chans.clear();S.msgs.clear();
+  show('login');$('#err').textContent=msg||'';
+}
+function start(){status('Connecting...');connect()}
+$('#go').onclick=()=>{token=$('#tok').value.trim().replace(/^Bot\s+/i,'');if(!token)return;localStorage.setItem('mc_token',token);$('#tok').value='';start()};
+if(token)start();
+</script>
+</body></html>
