@@ -1,0 +1,6 @@
+{
+  "appId": "app.modcord.client",
+  "appName": "Modcord",
+  "webDir": "www",
+  "plugins": { "CapacitorHttp": { "enabled": true } }
+}
